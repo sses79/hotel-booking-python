@@ -20,8 +20,10 @@ payments are intentionally outside the MVP. See the full
 Create local configuration and start the API with PostgreSQL:
 
 ```bash
-cp .env.example .env
-docker compose --env-file .env -f infra/local/compose.yaml up --build
+test -f .env || cp .env.example .env
+docker compose --env-file .env -f infra/local/compose.yaml up -d db
+docker compose --env-file .env -f infra/local/compose.yaml run --rm --build migrate
+docker compose --env-file .env -f infra/local/compose.yaml up --build api
 ```
 
 Open:
@@ -29,6 +31,18 @@ Open:
 - API documentation: <http://localhost:8000/docs>
 - Liveness: <http://localhost:8000/health/live>
 - Readiness: <http://localhost:8000/health/ready>
+
+Create or reset the deterministic local dataset:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/admin/seed
+curl -X POST http://localhost:8000/api/v1/admin/reset
+```
+
+These destructive demo routes are intentionally unauthenticated because
+authentication is outside the MVP. They are registered only when `APP_ENV` is
+`local` or `test`; never expose an instance using either environment value to
+an untrusted network.
 
 Stop the containers without deleting database data:
 
@@ -47,10 +61,32 @@ docker compose --env-file .env -f infra/local/compose.yaml down --volumes
 Start only PostgreSQL, install dependencies, and run the API:
 
 ```bash
-cp .env.example .env
+test -f .env || cp .env.example .env
 docker compose --env-file .env -f infra/local/compose.yaml up -d db
 uv sync --frozen
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
+```
+
+## Database Migrations
+
+Apply all migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+Create and review a migration after changing ORM metadata:
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+uv run alembic upgrade head
+```
+
+Rollback one revision locally when testing reversibility:
+
+```bash
+uv run alembic downgrade -1
 ```
 
 ## Checks

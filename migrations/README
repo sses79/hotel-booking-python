@@ -1,0 +1,7 @@
+Alembic migrations for the hotel booking PostgreSQL schema.
+
+Create revisions from the repository root and review generated SQL before
+committing:
+
+    uv run alembic revision --autogenerate -m "describe change"
+    uv run alembic upgrade head
