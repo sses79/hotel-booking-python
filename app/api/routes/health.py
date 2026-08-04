@@ -35,7 +35,10 @@ async def ready(request: Request) -> HealthResponse | JSONResponse:
     try:
         async with request.app.state.db_engine.connect() as connection:
             await connection.execute(text("SELECT 1"))
-    except OSError, SQLAlchemyError:
+    except (
+        OSError,
+        SQLAlchemyError,
+    ):
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=HealthResponse(status="not_ready").model_dump(),
