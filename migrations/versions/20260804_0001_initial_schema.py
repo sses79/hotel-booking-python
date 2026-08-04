@@ -56,6 +56,7 @@ def upgrade() -> None:
             "room_number",
             name="uq_rooms_hotel_number",
         ),
+        sa.UniqueConstraint("id", "hotel_id", name="uq_rooms_id_hotel_id"),
     )
     op.create_index("ix_rooms_hotel_id", "rooms", ["hotel_id"], unique=False)
     op.create_table(
@@ -89,9 +90,9 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["room_id"],
-            ["rooms.id"],
-            name="fk_bookings_room_id_rooms",
+            ["room_id", "hotel_id"],
+            ["rooms.id", "rooms.hotel_id"],
+            name="fk_bookings_room_hotel_rooms",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_bookings"),

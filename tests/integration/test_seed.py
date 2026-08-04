@@ -1,5 +1,6 @@
 """PostgreSQL-backed seed, reset, and constraint tests."""
 
+import asyncio
 import os
 from datetime import date
 from typing import cast
@@ -87,6 +88,34 @@ async def test_seed_is_repeatable_and_reset_removes_all_data() -> None:
 
 
 @pytest.mark.asyncio
+async def test_concurrent_seed_requests_are_serialized() -> None:
+    app = create_app(Settings(app_env="test", database_url=integration_database_url()))
+    factory = session_factory_for(app)
+    transport = httpx.ASGITransport(app=app)
+
+    try:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+        ) as client:
+            responses = await asyncio.gather(
+                client.post("/api/v1/admin/seed"),
+                client.post("/api/v1/admin/seed"),
+            )
+
+            assert [response.status_code for response in responses] == [200, 200]
+            assert responses[0].json() == responses[1].json()
+            assert await table_counts(factory) == (1, 6, 0)
+    finally:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+        ) as client:
+            await client.post("/api/v1/admin/reset")
+        await app.state.db_engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_database_rejects_non_positive_room_capacity() -> None:
     app = create_app(Settings(app_env="test", database_url=integration_database_url()))
     factory = session_factory_for(app)
@@ -108,6 +137,50 @@ async def test_database_rejects_non_positive_room_capacity() -> None:
                     room_number="INVALID",
                     room_type=RoomType.SINGLE,
                     capacity=0,
+                )
+            )
+            with pytest.raises(IntegrityError):
+                await session.flush()
+            await session.rollback()
+    finally:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+        ) as client:
+            await client.post("/api/v1/admin/reset")
+        await app.state.db_engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_booking_for_room_in_another_hotel() -> None:
+    app = create_app(Settings(app_env="test", database_url=integration_database_url()))
+    factory = session_factory_for(app)
+    transport = httpx.ASGITransport(app=app)
+
+    try:
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+        ) as client:
+            seeded = await client.post("/api/v1/admin/seed")
+            assert seeded.status_code == 200
+
+        async with factory() as session:
+            room_id = await session.scalar(select(Room.id).limit(1))
+            assert room_id is not None
+            other_hotel = Hotel(id=uuid4(), name="Other Hotel")
+            session.add(other_hotel)
+            await session.flush()
+            session.add(
+                Booking(
+                    id=uuid4(),
+                    reference=uuid4().hex.upper(),
+                    hotel_id=other_hotel.id,
+                    room_id=room_id,
+                    guest_name="Cross-hotel Test",
+                    guest_count=1,
+                    check_in_date=date(2026, 9, 1),
+                    check_out_date=date(2026, 9, 2),
                 )
             )
             with pytest.raises(IntegrityError):

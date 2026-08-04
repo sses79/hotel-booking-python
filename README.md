@@ -39,7 +39,10 @@ curl -X POST http://localhost:8000/api/v1/admin/seed
 curl -X POST http://localhost:8000/api/v1/admin/reset
 ```
 
-The admin routes are registered only when `APP_ENV` is `local` or `test`.
+These destructive demo routes are intentionally unauthenticated because
+authentication is outside the MVP. They are registered only when `APP_ENV` is
+`local` or `test`; never expose an instance using either environment value to
+an untrusted network.
 
 Stop the containers without deleting database data:
 

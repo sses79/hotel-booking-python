@@ -3,13 +3,14 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import delete
+from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Booking, Hotel, Room, RoomType
 
 DEMO_HOTEL_ID = UUID("00000000-0000-0000-0000-000000000001")
 DEMO_HOTEL_NAME = "Grand Plaza Hotel"
+DEMO_DATA_LOCK_ID = 7_815_301
 
 
 @dataclass(frozen=True)
@@ -71,7 +72,16 @@ class SeedSummary:
     rooms_created: int
 
 
-async def reset_data(session: AsyncSession) -> None:
+async def _acquire_demo_data_lock(session: AsyncSession) -> None:
+    """Serialize destructive demo-data operations for this transaction."""
+
+    await session.execute(
+        text("SELECT pg_advisory_xact_lock(:lock_id)"),
+        {"lock_id": DEMO_DATA_LOCK_ID},
+    )
+
+
+async def _delete_all_data(session: AsyncSession) -> None:
     """Delete application data in foreign-key dependency order."""
 
     await session.execute(delete(Booking))
@@ -79,10 +89,18 @@ async def reset_data(session: AsyncSession) -> None:
     await session.execute(delete(Hotel))
 
 
+async def reset_data(session: AsyncSession) -> None:
+    """Exclusively delete all application data for the demo environment."""
+
+    await _acquire_demo_data_lock(session)
+    await _delete_all_data(session)
+
+
 async def seed_demo_data(session: AsyncSession) -> SeedSummary:
     """Reset and recreate the stable Phase 2 demo dataset."""
 
-    await reset_data(session)
+    await _acquire_demo_data_lock(session)
+    await _delete_all_data(session)
 
     hotel = Hotel(
         id=DEMO_HOTEL_ID,

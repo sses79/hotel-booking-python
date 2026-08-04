@@ -12,6 +12,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -29,6 +30,11 @@ class RoomType(StrEnum):
     SINGLE = "single"
     DOUBLE = "double"
     DELUXE = "deluxe"
+
+
+ROOM_TYPE_CHECK_SQL = "room_type IN ({})".format(
+    ", ".join(f"'{room_type.value}'" for room_type in RoomType)
+)
 
 
 ROOM_TYPE_ENUM = Enum(
@@ -63,8 +69,8 @@ class Hotel(Base):
     )
     bookings: Mapped[list[Booking]] = relationship(
         back_populates="hotel",
-        passive_deletes=True,
         lazy="raise",
+        viewonly=True,
     )
 
 
@@ -74,11 +80,9 @@ class Room(Base):
     __tablename__ = "rooms"
     __table_args__ = (
         UniqueConstraint("hotel_id", "room_number", name="uq_rooms_hotel_number"),
+        UniqueConstraint("id", "hotel_id", name="uq_rooms_id_hotel_id"),
         CheckConstraint("capacity > 0", name="positive_capacity"),
-        CheckConstraint(
-            "room_type IN ('single', 'double', 'deluxe')",
-            name="valid_room_type",
-        ),
+        CheckConstraint(ROOM_TYPE_CHECK_SQL, name="valid_room_type"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -110,6 +114,12 @@ class Booking(Base):
             "check_in_date < check_out_date",
             name="valid_date_range",
         ),
+        ForeignKeyConstraint(
+            ["room_id", "hotel_id"],
+            ["rooms.id", "rooms.hotel_id"],
+            name="fk_bookings_room_hotel_rooms",
+            ondelete="CASCADE",
+        ),
         Index(
             "ix_bookings_room_dates",
             "room_id",
@@ -125,10 +135,7 @@ class Booking(Base):
         nullable=False,
         index=True,
     )
-    room_id: Mapped[UUID] = mapped_column(
-        ForeignKey("rooms.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+    room_id: Mapped[UUID] = mapped_column(nullable=False)
     guest_name: Mapped[str] = mapped_column(String(200), nullable=False)
     guest_count: Mapped[int] = mapped_column(Integer, nullable=False)
     check_in_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -139,5 +146,9 @@ class Booking(Base):
         server_default=func.now(),
     )
 
-    hotel: Mapped[Hotel] = relationship(back_populates="bookings", lazy="raise")
+    hotel: Mapped[Hotel] = relationship(
+        back_populates="bookings",
+        lazy="raise",
+        viewonly=True,
+    )
     room: Mapped[Room] = relationship(back_populates="bookings", lazy="raise")
