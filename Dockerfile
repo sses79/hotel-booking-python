@@ -23,6 +23,8 @@ RUN groupadd --system app && useradd --system --gid app app
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --chown=app:app app ./app
+COPY --chown=app:app alembic.ini ./alembic.ini
+COPY --chown=app:app migrations ./migrations
 
 USER app
 EXPOSE 8000

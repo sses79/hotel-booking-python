@@ -6,12 +6,14 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+type AppEnvironment = Literal["local", "test", "dev", "prod"]
+
 
 class Settings(BaseSettings):
     """Validated runtime settings."""
 
     app_name: str = "Hotel Booking API"
-    app_env: Literal["local", "test", "dev", "prod"] = "local"
+    app_env: AppEnvironment = "local"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     database_url: str = (
         "postgresql+asyncpg://hotel_booking:hotel_booking_local@localhost:5432/"
