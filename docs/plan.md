@@ -24,14 +24,15 @@ The first release includes:
 - Local PostgreSQL and API containers through Docker Compose.
 - Repeatable AWS infrastructure and deployment through Terraform.
 
-The first release does not include a frontend, payments, customer accounts,
-email, or magic-link authentication. Those can be added later without changing
-the booking core. Admin seed/reset endpoints must be disabled outside local and
-test environments.
+The first release does not include a frontend, payments, customer accounts, or
+authentication, including email or magic-link authentication. These are
+confirmed as outside the MVP and can be added later without changing the
+booking core. Admin seed/reset endpoints must be disabled outside local and test
+environments.
 
 ## Technology Choices
 
-- Python 3.12.
+- Python 3.14 using the standard GIL-enabled build.
 - FastAPI for HTTP routing, validation, dependency injection, and OpenAPI.
 - Pydantic v2 plus `pydantic-settings` for API schemas and configuration.
 - SQLAlchemy 2.x using its async API.
@@ -43,8 +44,12 @@ test environments.
 - Docker and Docker Compose for local development.
 - Terraform for AWS infrastructure.
 
-Pin direct dependencies and commit the resolved lock file. A lightweight tool
-such as `uv` is preferred for fast, reproducible Python environments.
+Use `uv` for dependency management, virtual environments, command execution,
+and lock-file generation. Pin direct dependencies and commit `uv.lock` for
+reproducible environments.
+
+Release the repository under the MIT License and commit the standard license
+text as `LICENSE` during Phase 1.
 
 ## Project Structure
 
@@ -458,9 +463,16 @@ deployment role. Do not store long-lived AWS access keys in repository secrets.
 
 - Create the Python package, settings, FastAPI app factory, health endpoints,
   linting, typing, and test configuration.
+- Configure `uv` and commit the generated `uv.lock`.
 - Add Dockerfile, local Compose, `.env.example`, and developer commands.
+- Add repository essentials: `README.md`, MIT `LICENSE`, `.gitignore`,
+  `.dockerignore`, and `.editorconfig`.
+- Add an initial GitHub Actions workflow for Ruff, formatting, mypy, and tests.
+  Once the workflow succeeds on `dev`, require its stable check on protected
+  `main`.
 
-Exit criterion: the API and PostgreSQL start locally, and checks pass.
+Exit criterion: the API and PostgreSQL start locally; local checks pass; CI
+passes on `dev`; and the documented setup works from a clean checkout.
 
 ### Phase 2: Database And Seed Data
 
