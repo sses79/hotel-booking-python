@@ -1,0 +1,44 @@
+[project]
+name = "hotel-booking-python"
+version = "0.1.0"
+description = "Hotel booking API built with FastAPI and PostgreSQL"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+license = "MIT"
+dependencies = [
+    "asyncpg>=0.31.0,<1",
+    "fastapi>=0.115.0,<1",
+    "pydantic-settings>=2.6.0,<3",
+    "sqlalchemy[asyncio]>=2.0.36,<3",
+    "uvicorn[standard]>=0.32.0,<1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.0,<1",
+    "mypy>=1.13.0,<2",
+    "pytest>=8.3.0,<10",
+    "pytest-asyncio>=0.24.0,<2",
+    "ruff>=0.8.0,<1",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: requires an external service such as PostgreSQL",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["ASYNC", "B", "E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests"]
