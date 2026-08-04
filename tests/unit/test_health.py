@@ -35,9 +35,11 @@ async def test_openapi_exposes_health_routes() -> None:
             transport=transport,
             base_url="http://test",
         ) as client:
-            document = (await client.get("/openapi.json")).json()
+            response = await client.get("/openapi.json")
     finally:
         await app.state.db_engine.dispose()
 
+    assert response.status_code == 200
+    document = response.json()
     assert "/health/live" in document["paths"]
     assert "/health/ready" in document["paths"]

@@ -26,7 +26,7 @@ services:
       context: ../..
       dockerfile: Dockerfile
     environment:
-      APP_ENV: local
+      APP_ENV: ${APP_ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: >-
         postgresql+asyncpg://${POSTGRES_USER:-hotel_booking}:${POSTGRES_PASSWORD:-hotel_booking_local}@db:5432/${POSTGRES_DB:-hotel_booking}
