@@ -67,7 +67,6 @@ async def get_available_rooms(
 ) -> list[Room]:
     """Return rooms suitable and free for the requested half-open date range."""
 
-    validate_stay_dates(check_in_date, check_out_date)
     hotel = await hotel_repository.find_hotel_by_id(session, hotel_id)
     if hotel is None:
         raise NotFoundError(
@@ -76,6 +75,7 @@ async def get_available_rooms(
             details={"hotel_id": str(hotel_id)},
         )
 
+    validate_stay_dates(check_in_date, check_out_date)
     return await hotel_repository.list_available_rooms(
         session,
         hotel_id=hotel_id,

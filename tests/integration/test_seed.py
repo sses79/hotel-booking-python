@@ -1,14 +1,11 @@
 """PostgreSQL-backed seed, reset, and constraint tests."""
 
 import asyncio
-import os
 from datetime import date
-from typing import cast
 from uuid import UUID, uuid4
 
 import httpx
 import pytest
-from fastapi import FastAPI
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -17,26 +14,9 @@ from app.core.config import Settings
 from app.db.models import Booking, Hotel, Room, RoomType
 from app.main import create_app
 from app.services.seed import DEMO_HOTEL_ID
+from tests.integration.conftest import integration_database_url, session_factory_for
 
 pytestmark = pytest.mark.integration
-
-
-def integration_database_url() -> str:
-    """Return the configured integration database or skip the test."""
-
-    database_url = os.getenv("TEST_DATABASE_URL")
-    if database_url is None:
-        pytest.skip("TEST_DATABASE_URL is not configured")
-    return database_url
-
-
-def session_factory_for(app: FastAPI) -> async_sessionmaker[AsyncSession]:
-    """Read the typed session factory stored on a FastAPI application."""
-
-    return cast(
-        async_sessionmaker[AsyncSession],
-        app.state.db_session_factory,
-    )
 
 
 async def table_counts(

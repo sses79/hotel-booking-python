@@ -1,40 +1,19 @@
 """PostgreSQL-backed hotel lookup and room availability tests."""
 
-import os
 from datetime import date, timedelta
-from typing import cast
 from uuid import UUID, uuid4
 
 import httpx
 import pytest
-from fastapi import FastAPI
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
 from app.db.models import Booking, Room
 from app.main import create_app
 from app.services.seed import DEMO_HOTEL_ID
+from tests.integration.conftest import integration_database_url, session_factory_for
 
 pytestmark = pytest.mark.integration
-
-
-def integration_database_url() -> str:
-    """Return the configured integration database or skip the test."""
-
-    database_url = os.getenv("TEST_DATABASE_URL")
-    if database_url is None:
-        pytest.skip("TEST_DATABASE_URL is not configured")
-    return database_url
-
-
-def session_factory_for(app: FastAPI) -> async_sessionmaker[AsyncSession]:
-    """Read the typed session factory stored on a FastAPI application."""
-
-    return cast(
-        async_sessionmaker[AsyncSession],
-        app.state.db_session_factory,
-    )
 
 
 def availability_path(
@@ -213,11 +192,11 @@ async def test_availability_uses_half_open_dates_and_maps_known_errors() -> None
                     guests=2,
                 )
             )
-            unknown_hotel = await client.get(
+            unknown_hotel_with_invalid_dates = await client.get(
                 availability_path(
                     uuid4(),
                     check_in=booked_check_in,
-                    check_out=booked_check_out,
+                    check_out=booked_check_in,
                     guests=2,
                 )
             )
@@ -228,8 +207,8 @@ async def test_availability_uses_half_open_dates_and_maps_known_errors() -> None
             assert "201" in [room["room_number"] for room in back_to_back.json()]
             assert invalid_dates.status_code == 400
             assert invalid_dates.json()["code"] == "invalid_date_range"
-            assert unknown_hotel.status_code == 404
-            assert unknown_hotel.json()["code"] == "hotel_not_found"
+            assert unknown_hotel_with_invalid_dates.status_code == 404
+            assert unknown_hotel_with_invalid_dates.json()["code"] == "hotel_not_found"
     finally:
         async with httpx.AsyncClient(
             transport=transport,

@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.api.responses import model_json_response
 from app.api.routes.admin import router as admin_router
 from app.api.routes.health import router as health_router
 from app.api.routes.hotels import router as hotels_router
@@ -53,9 +54,9 @@ def create_app(
             message=exc.message,
             details=exc.details,
         )
-        return JSONResponse(
+        return model_json_response(
             status_code=exc.status_code,
-            content=problem.model_dump(mode="json"),
+            model=problem,
         )
 
     application.include_router(health_router)

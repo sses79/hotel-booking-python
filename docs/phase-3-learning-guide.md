@@ -236,8 +236,8 @@ GET /api/v1/hotels?name=Grand Plaza Hotel
 GET /api/v1/hotels/{id}/rooms/available
   ?check_in=2027-09-01&check_out=2027-09-03&guests=2
   -> FastAPI parses UUID, dates, integer, and optional enum
-  -> service validates dates
   -> repository confirms hotel exists
+  -> service validates dates
   -> repository SELECTs rooms
        hotel matches
        capacity fits

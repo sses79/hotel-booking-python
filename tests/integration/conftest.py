@@ -3,10 +3,31 @@
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from typing import cast
 
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+
+def integration_database_url() -> str:
+    """Return the configured integration database or skip the test."""
+
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if database_url is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    return database_url
+
+
+def session_factory_for(app: FastAPI) -> async_sessionmaker[AsyncSession]:
+    """Read the typed session factory stored on a FastAPI application."""
+
+    return cast(
+        async_sessionmaker[AsyncSession],
+        app.state.db_session_factory,
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
