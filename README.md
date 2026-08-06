@@ -44,6 +44,28 @@ authentication is outside the MVP. They are registered only when `APP_ENV` is
 `local` or `test`; never expose an instance using either environment value to
 an untrusted network.
 
+Find the seeded hotel by its exact name:
+
+```bash
+curl --get http://localhost:8000/api/v1/hotels \
+  --data-urlencode "name=Grand Plaza Hotel"
+```
+
+Find suitable rooms that are free for the full half-open stay
+`[check_in, check_out)`:
+
+```bash
+curl --get \
+  http://localhost:8000/api/v1/hotels/00000000-0000-0000-0000-000000000001/rooms/available \
+  --data-urlencode "check_in=2027-09-01" \
+  --data-urlencode "check_out=2027-09-03" \
+  --data-urlencode "guests=2" \
+  --data-urlencode "room_type=double"
+```
+
+Omit `room_type` to search all room categories. Results are ordered by capacity,
+room type, and room number; an empty list means no suitable room is available.
+
 Stop the containers without deleting database data:
 
 ```bash

@@ -22,7 +22,10 @@ target_metadata = Base.metadata
 def get_database_url() -> str:
     """Prefer deployment environment configuration over the local default."""
 
-    return os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    database_url = os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL or sqlalchemy.url must be configured")
+    return database_url
 
 
 def run_migrations_offline() -> None:

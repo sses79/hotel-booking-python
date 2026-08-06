@@ -1,16 +1,21 @@
 """FastAPI application factory and ASGI entrypoint."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.api.responses import model_json_response
 from app.api.routes.admin import router as admin_router
 from app.api.routes.health import router as health_router
+from app.api.routes.hotels import router as hotels_router
 from app.core.config import Settings, get_settings
+from app.core.errors import ApplicationError
 from app.core.logging import configure_logging
 from app.db.session import create_engine, create_session_factory
+from app.schemas.errors import ProblemResponse
 
 
 def create_app(
@@ -26,7 +31,7 @@ def create_app(
     session_factory = create_session_factory(engine)
 
     @asynccontextmanager
-    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(application: FastAPI) -> AsyncGenerator[None]:
         yield
         await application.state.db_engine.dispose()
 
@@ -38,7 +43,24 @@ def create_app(
     application.state.settings = runtime_settings
     application.state.db_engine = engine
     application.state.db_session_factory = session_factory
+
+    @application.exception_handler(ApplicationError)
+    async def handle_application_error(
+        _: Request,
+        exc: ApplicationError,
+    ) -> JSONResponse:
+        problem = ProblemResponse(
+            code=exc.code,
+            message=exc.message,
+            details=exc.details,
+        )
+        return model_json_response(
+            status_code=exc.status_code,
+            model=problem,
+        )
+
     application.include_router(health_router)
+    application.include_router(hotels_router)
     if runtime_settings.app_env in {"local", "test"}:
         application.include_router(admin_router)
     return application

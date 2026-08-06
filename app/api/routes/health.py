@@ -8,6 +8,8 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.api.responses import model_json_response
+
 router = APIRouter(prefix="/health", tags=["health"])
 
 
@@ -39,9 +41,9 @@ async def ready(request: Request) -> HealthResponse | JSONResponse:
         OSError,
         SQLAlchemyError,
     ):
-        return JSONResponse(
+        return model_json_response(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content=HealthResponse(status="not_ready").model_dump(),
+            model=HealthResponse(status="not_ready"),
         )
 
     return HealthResponse(status="ready")

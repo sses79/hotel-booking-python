@@ -1,12 +1,15 @@
 """Environment-backed application settings."""
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, StringConstraints
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 type AppEnvironment = Literal["local", "test", "dev", "prod"]
+type DatabaseUrl = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1)
+]
 
 
 class Settings(BaseSettings):
@@ -15,7 +18,7 @@ class Settings(BaseSettings):
     app_name: str = "Hotel Booking API"
     app_env: AppEnvironment = "local"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
-    database_url: str = (
+    database_url: DatabaseUrl = (
         "postgresql+asyncpg://hotel_booking:hotel_booking_local@localhost:5432/"
         "hotel_booking"
     )
