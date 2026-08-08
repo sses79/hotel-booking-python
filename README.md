@@ -66,6 +66,32 @@ curl --get \
 Omit `room_type` to search all room categories. Results are ordered by capacity,
 room type, and room number; an empty list means no suitable room is available.
 
+Create a booking for the smallest suitable available room:
+
+```bash
+curl -i -X POST http://localhost:8000/api/v1/bookings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hotel_id": "00000000-0000-0000-0000-000000000001",
+    "guest_name": "Ada Lovelace",
+    "guest_count": 2,
+    "check_in_date": "2027-09-01",
+    "check_out_date": "2027-09-03",
+    "room_type": "double"
+  }'
+```
+
+The API returns `201 Created`, a 32-character public booking reference, and a
+`Location` header. Use that path to retrieve the booking:
+
+```bash
+curl http://localhost:8000/api/v1/bookings/REPLACE_WITH_BOOKING_REFERENCE
+```
+
+Booking creation locks candidate rooms inside its transaction. PostgreSQL also
+rejects overlapping date ranges for the same room, protecting correctness when
+requests race or another write path bypasses the service.
+
 Stop the containers without deleting database data:
 
 ```bash
