@@ -505,7 +505,12 @@ all behave correctly.
 Exit criterion: Terraform validates and a reviewed development environment can
 be created without manual console configuration.
 
-### Phase 6: Deployment And Documentation
+### Phase 6: Deployment And Documentation (Deferred / Optional)
+
+This phase is not required to complete the local-first demo. The repository is
+considered feature-complete after Phase 5; continue with deployment only when a
+hosted environment is specifically needed and its recurring AWS cost has been
+reviewed.
 
 - Add image publishing, one-off migration, ECS rollout, smoke-test workflow,
   operational notes, architecture diagram, and complete README.

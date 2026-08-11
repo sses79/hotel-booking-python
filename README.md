@@ -1,13 +1,47 @@
 # Hotel Booking API
 
 A demo hotel room booking API built with Python 3.14, FastAPI, SQLAlchemy, and
-PostgreSQL. Local development uses Docker Compose; AWS deployment will use
-Terraform.
+PostgreSQL. It is intended to run locally with Docker Compose. Optional AWS
+Terraform is retained for future reference but is not needed for the demo.
 
 The MVP focuses on hotel search, room availability, booking creation, booking
 lookup, and deterministic seed/reset behavior. Authentication, frontend, and
 payments are intentionally outside the MVP. See the full
 [implementation plan](docs/plan.md).
+
+## Project Architecture
+
+```mermaid
+flowchart LR
+    Client[API client / Swagger UI]
+
+    subgraph Local[Local demo environment]
+        API[FastAPI container]
+        DB[(PostgreSQL 16 container)]
+    end
+
+    subgraph Application[FastAPI application]
+        Routes[API routes]
+        Schemas[Pydantic schemas]
+        Services[Booking and hotel services]
+        Repositories[SQLAlchemy repositories]
+        Models[Database models]
+    end
+
+    Client -->|HTTP :8000| API
+    API --> Routes
+    Routes --> Schemas
+    Routes --> Services
+    Services --> Repositories
+    Repositories --> Models
+    Models -->|asyncpg| DB
+    Migrations[Alembic migrations] --> DB
+```
+
+The repository is designed to run locally as a demo using Docker Compose. The
+HTTP layer stays thin, services enforce booking rules, repositories contain
+database queries, and PostgreSQL provides transactional locking and the final
+overlap constraint.
 
 ## Prerequisites
 
@@ -65,6 +99,32 @@ curl --get \
 
 Omit `room_type` to search all room categories. Results are ordered by capacity,
 room type, and room number; an empty list means no suitable room is available.
+
+Create a booking for the smallest suitable available room:
+
+```bash
+curl -i -X POST http://localhost:8000/api/v1/bookings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hotel_id": "00000000-0000-0000-0000-000000000001",
+    "guest_name": "Ada Lovelace",
+    "guest_count": 2,
+    "check_in_date": "2027-09-01",
+    "check_out_date": "2027-09-03",
+    "room_type": "double"
+  }'
+```
+
+The API returns `201 Created`, a 32-character public booking reference, and a
+`Location` header. Use that path to retrieve the booking:
+
+```bash
+curl http://localhost:8000/api/v1/bookings/REPLACE_WITH_BOOKING_REFERENCE
+```
+
+Booking creation locks candidate rooms inside its transaction. PostgreSQL also
+rejects overlapping date ranges for the same room, protecting correctness when
+requests race or another write path bypasses the service.
 
 Stop the containers without deleting database data:
 
@@ -131,6 +191,17 @@ TEST_DATABASE_URL=postgresql+asyncpg://hotel_booking:hotel_booking_local@localho
 
 Settings are read from environment variables. Safe development defaults are
 documented in `.env.example`; `.env` and secrets must not be committed.
+
+## AWS Infrastructure
+
+AWS deployment is optional and is not required for this demo. No AWS
+infrastructure needs to be created to run or review the project locally.
+
+The Phase 5 Terraform under [`infra/terraform`](infra/terraform/README.md) is
+retained as a reference production-shaped deployment design. Do not apply it
+without reviewing the recurring charges: the proposed low-traffic environment
+is estimated at about $95/month when one Fargate task runs continuously. See
+the detailed [AWS cost estimate and assumptions](infra/terraform/COST.md).
 
 ## License
 

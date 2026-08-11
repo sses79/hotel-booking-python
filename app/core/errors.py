@@ -29,3 +29,9 @@ class NotFoundError(ApplicationError):
     """A requested domain resource does not exist."""
 
     status_code = 404
+
+
+class ConflictError(ApplicationError):
+    """A valid request conflicts with current persisted state."""
+
+    status_code = 409

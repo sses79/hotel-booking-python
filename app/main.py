@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.api.responses import model_json_response
 from app.api.routes.admin import router as admin_router
+from app.api.routes.bookings import router as bookings_router
 from app.api.routes.health import router as health_router
 from app.api.routes.hotels import router as hotels_router
 from app.core.config import Settings, get_settings
@@ -61,6 +62,7 @@ def create_app(
 
     application.include_router(health_router)
     application.include_router(hotels_router)
+    application.include_router(bookings_router)
     if runtime_settings.app_env in {"local", "test"}:
         application.include_router(admin_router)
     return application

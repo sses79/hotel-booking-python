@@ -18,7 +18,9 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     func,
+    text,
 )
+from sqlalchemy.dialects.postgresql import ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -45,6 +47,8 @@ ROOM_TYPE_ENUM = Enum(
     validate_strings=True,
     length=16,
 )
+
+BOOKING_OVERLAP_CONSTRAINT = "excl_bookings_room_date_overlap"
 
 
 class Hotel(Base):
@@ -119,6 +123,12 @@ class Booking(Base):
             ["rooms.id", "rooms.hotel_id"],
             name="fk_bookings_room_hotel_rooms",
             ondelete="CASCADE",
+        ),
+        ExcludeConstraint(
+            ("room_id", "="),
+            (text("daterange(check_in_date, check_out_date, '[)')"), "&&"),
+            name=BOOKING_OVERLAP_CONSTRAINT,
+            using="gist",
         ),
         Index(
             "ix_bookings_room_dates",
