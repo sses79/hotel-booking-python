@@ -1,0 +1,14 @@
+# Phase 5 creates the ECS service at zero tasks because the ECR repository is new.
+# After pushing an immutable image in Phase 6, set both values together.
+image_tag         = "replace-with-git-commit-sha"
+ecs_desired_count = 1
+
+# Development-safe defaults. Enable protection before retaining real data.
+rds_deletion_protection = false
+rds_skip_final_snapshot = true
+
+# Optional custom HTTPS endpoint. If certificate_arn is omitted, Terraform
+# requests and validates an ACM certificate in the supplied Route 53 zone.
+# domain_name      = "api.example.com"
+# route53_zone_id  = "Z1234567890"
+# certificate_arn  = "arn:aws:acm:eu-west-1:123456789012:certificate/..."

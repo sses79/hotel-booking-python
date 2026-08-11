@@ -31,4 +31,5 @@ dist/
 crash.log
 terraform.tfvars
 *.auto.tfvars
+backend.hcl
 !*.tfvars.example
